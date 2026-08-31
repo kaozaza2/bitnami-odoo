@@ -15,14 +15,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { version: "16", full: "16.0", date: "20260831" }
-          - { version: "17", full: "17.0", date: "20260831" }
-          - { version: "18", full: "18.0", date: "20260830" }
-          - { version: "19", full: "19.0", date: "20260801" }
+        version: ["16", "17", "18", "19"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Resolve version tags from Dockerfile
+        id: ver
+        shell: bash
+        run: |
+          APP_VERSION="$(sed -n 's/^ENV APP_VERSION="\([^"]*\)".*/\1/p' "${{ matrix.version }}/debian-12/Dockerfile")"
+          test -n "$APP_VERSION" || { echo "APP_VERSION not found in ${{ matrix.version }}/debian-12/Dockerfile"; exit 1; }
+          echo "app=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "full=${APP_VERSION%.*}" >> "$GITHUB_OUTPUT"
+          echo "major=${APP_VERSION%%.*}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -45,6 +51,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/kaozaza2/bitnami-odoo:${{ matrix.version }}
-            ghcr.io/kaozaza2/bitnami-odoo:${{ matrix.full }}
-            ghcr.io/kaozaza2/bitnami-odoo:${{ matrix.full }}.${{ matrix.date }}
+            ghcr.io/kaozaza2/bitnami-odoo:${{ steps.ver.outputs.major }}
+            ghcr.io/kaozaza2/bitnami-odoo:${{ steps.ver.outputs.full }}
+            ghcr.io/kaozaza2/bitnami-odoo:${{ steps.ver.outputs.app }}

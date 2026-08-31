@@ -1,0 +1,50 @@
+name: Build and push Odoo images to GHCR
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { version: "16", full: "16.0", date: "20260831" }
+          - { version: "17", full: "17.0", date: "20260831" }
+          - { version: "18", full: "18.0", date: "20260830" }
+          - { version: "19", full: "19.0", date: "20260801" }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.version }}/debian-12
+          file: ./${{ matrix.version }}/debian-12/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/kaozaza2/bitnami-odoo:${{ matrix.version }}
+            ghcr.io/kaozaza2/bitnami-odoo:${{ matrix.full }}
+            ghcr.io/kaozaza2/bitnami-odoo:${{ matrix.full }}.${{ matrix.date }}

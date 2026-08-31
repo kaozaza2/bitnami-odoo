@@ -4,7 +4,7 @@
 
 [Overview of Odoo](https://www.odoo.com/)
 
-These images are built from the [Bitnami Odoo container recipes](https://github.com/bitnami/containers/tree/main/bitnami/odoo), which is why the filesystem and environment variable behavior match the familiar Bitnami images. Bitnami dropped Odoo 16 and 17 from its catalog in 2025 and now maintains Odoo 19 only; this repository keeps 16/17/18 buildable by sourcing those releases from the official Odoo nightly builds and keeps 19 on the last official Bitnami release.
+These images are built from the [Bitnami Odoo container recipes](https://github.com/bitnami/containers/tree/main/bitnami/odoo), which is why the filesystem and environment variable behavior match the familiar Bitnami images. Bitnami dropped Odoo 16 and 17 from its catalog in 2025 and now maintains Odoo 19 only; this is a hard fork of that recipe that keeps every supported 16/17/18/19 series, sourcing all of them from the official Odoo nightly builds.
 
 ## Published images
 
@@ -21,7 +21,7 @@ All tags are published to `ghcr.io/kaozaza2/bitnami-odoo`. Each major version is
 | 16      | nightly.odoo.com `16.0` tgz, checksum-verified | `16.0.20260831`           |
 | 17      | nightly.odoo.com `17.0` tgz, checksum-verified | `17.0.20260831`           |
 | 18      | nightly.odoo.com `18.0` tgz, checksum-verified | `18.0.20260830`           |
-| 19      | last supported Bitnami release                 | `19.0.20260801`           |
+| 19      | nightly.odoo.com `19.0` tgz, checksum-verified | `19.0.20260830`           |
 
 The nightly tarballs are pinned by date (not the moving `latest` file), downloaded and verified by their SHA-256 during the Docker build, then applied on top of the Bitnami scaffold. Bumping a version means editing `ENV APP_VERSION` and the pinned checksum in the `Dockerfile` — the [CI workflow](.github/workflows/build-ghcr.yaml) derives the tags from that value, so the workflow file never needs to change.
 

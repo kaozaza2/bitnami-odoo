@@ -4,6 +4,16 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: >-
+          Commit or branch to build. Defaults to the commit that triggered the
+          run, which is not what the caller wants after pushing a new commit of
+          its own — pass that commit's SHA instead.
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -11,6 +21,7 @@ permissions:
 
 jobs:
   build:
+    name: Odoo ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -19,16 +30,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Resolve version tags from Dockerfile
         id: ver
         shell: bash
         run: |
-          APP_VERSION="$(sed -n 's/^ENV APP_VERSION="\([^"]*\)".*/\1/p' "${{ matrix.version }}/debian-12/Dockerfile")"
-          test -n "$APP_VERSION" || { echo "APP_VERSION not found in ${{ matrix.version }}/debian-12/Dockerfile"; exit 1; }
-          echo "app=${APP_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "full=${APP_VERSION%.*}" >> "$GITHUB_OUTPUT"
-          echo "major=${APP_VERSION%%.*}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          DF="${{ matrix.version }}/debian-12/Dockerfile"
+          APP_VERSION="$(sed -n 's/^ENV APP_VERSION="\([^"]*\)".*/\1/p' "$DF")"
+          if [ -z "$APP_VERSION" ]; then
+            echo "::error file=${DF}::No 'ENV APP_VERSION=\"...\"' line found — the image tags are derived from it, so the build cannot continue."
+            exit 1
+          fi
+          {
+            echo "app=${APP_VERSION}"
+            echo "full=${APP_VERSION%.*}"
+            echo "major=${APP_VERSION%%.*}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Odoo ${APP_VERSION} -> tags ${APP_VERSION%%.*}, ${APP_VERSION%.*}, ${APP_VERSION}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -54,3 +75,14 @@ jobs:
             ghcr.io/kaozaza2/bitnami-odoo:${{ steps.ver.outputs.major }}
             ghcr.io/kaozaza2/bitnami-odoo:${{ steps.ver.outputs.full }}
             ghcr.io/kaozaza2/bitnami-odoo:${{ steps.ver.outputs.app }}
+
+      - name: Summarise pushed tags
+        shell: bash
+        run: |
+          {
+            echo "### Odoo ${{ steps.ver.outputs.app }} pushed"
+            echo
+            for tag in "${{ steps.ver.outputs.major }}" "${{ steps.ver.outputs.full }}" "${{ steps.ver.outputs.app }}"; do
+              echo "- \`ghcr.io/kaozaza2/bitnami-odoo:${tag}\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

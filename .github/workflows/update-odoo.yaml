@@ -7,65 +7,135 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   bump:
+    name: Bump nightly pins
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.bump.outputs.changed }}
+      sha: ${{ steps.push.outputs.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Bump Odoo nightly pins
+        id: bump
         shell: bash
         run: |
           set -euo pipefail
-          # format: "<major version>:<python egg tag used in the venv>"
-          ENTRIES="16:py3.12 17:py3.12 18:py3.12 19:py3.13"
-          for entry in $ENTRIES; do
-            V="${entry%%:*}"
+
+          notes="${RUNNER_TEMP}/bump-notes.txt"    # one bullet per bumped version, reused as the commit body
+          : > "$notes"
+          bumped=()                                # major versions that actually moved
+          dates=()                                 # the nightly date each of them moved to
+
+          for V in 16 17 18 19; do
             DF="${V}/debian-12/Dockerfile"
             old="$(sed -n 's/^ENV APP_VERSION="\([^"]*\)".*/\1/p' "$DF")"
             old_date="${old##*.}"
             old_sha="$(sed -n 's/.*echo "\([0-9a-f]\{64\}\)  \/tmp\/odoo-source.tar.gz".*/\1/p' "$DF" | head -1)"
+
             listing="$(curl -fsSL "https://nightly.odoo.com/${V}.0/nightly/tgz/")"
-            latest="$(printf '%s\n' "$listing" | grep -oE "odoo_${V}\.0\.[0-9]{8}\.tar\.gz" | sort -u | tail -1)"
-            new_date="$(printf '%s' "$latest" | sed -n "s/.*odoo_${V}\.0\.\([0-9]\{8\}\).*/\1/p")"
+            new_date="$(printf '%s\n' "$listing" \
+              | grep -oE "odoo_${V}\.0\.[0-9]{8}\.tar\.gz" \
+              | sed -n "s/.*odoo_${V}\.0\.\([0-9]\{8\}\).*/\1/p" | sort -u | tail -1)"
+
             if [ -z "$new_date" ]; then
-              echo "error: no nightly tgz found for odoo ${V}.0" >&2
+              echo "::error::No nightly tarball listed for Odoo ${V}.0 — the directory index at nightly.odoo.com/${V}.0/nightly/tgz/ has no odoo_${V}.0.<date>.tar.gz entry."
               exit 1
             fi
+
             if [ "$new_date" = "$old_date" ]; then
-              echo "v${V}: already on latest nightly ${old_date}"
+              echo "Odoo ${V}.0 is already pinned to the newest nightly (${old_date}) — nothing to do."
               continue
             fi
-            curl -fsSL "https://nightly.odoo.com/${V}.0/nightly/tgz/odoo_${V}.0.${new_date}.tar.gz" -o "/tmp/odoo-${V}.tgz"
-            new_sha="$(shasum -a 256 "/tmp/odoo-${V}.tgz" | awk '{print $1}')"
-            rm -f "/tmp/odoo-${V}.tgz"
-            sed -i \
-              -e "s/${V}\.0\.${old_date}/${V}.0.${new_date}/g" \
-              -e "s/odoo-${V}\.0\.post${old_date}/odoo-${V}.0.post${new_date}/g" \
-              -e "s/${old_sha}/${new_sha}/g" "$DF"
-            sed -i "s/\`${V}.0.${old_date}\`/\`${V}.0.${new_date}\`/g" README.md
-            echo "v${V}: ${old_date} -> ${new_date} (sha ${old_sha:0:12}... -> ${new_sha:0:12}...)"
+
+            echo "Odoo ${V}.0: nightly ${old_date} -> ${new_date}, downloading to compute its checksum..."
+            new_sha="$(curl -fsSL "https://nightly.odoo.com/${V}.0/nightly/tgz/odoo_${V}.0.${new_date}.tar.gz" \
+              | sha256sum | awk '{print $1}')"
+
+            # The pin appears in the Dockerfile, the root README, and the per-version
+            # README / tags-info.yaml, so rewrite every file that mentions the old
+            # version string or checksum rather than a hard-coded list of paths.
+            touched="$(grep -rl -e "${V}\.0\.${old_date}" -e "${old_sha}" . --exclude-dir=.git | sort)"
+            printf '%s\n' "$touched" | while IFS= read -r f; do
+              sed -i \
+                -e "s/${V}\.0\.post${old_date}/${V}.0.post${new_date}/g" \
+                -e "s/${V}\.0\.${old_date}/${V}.0.${new_date}/g" \
+                -e "s/${old_sha}/${new_sha}/g" "$f"
+            done
+
+            echo "Odoo ${V}.0: updated $(printf '%s\n' "$touched" | wc -l | tr -d ' ') file(s), sha256 ${old_sha:0:12} -> ${new_sha:0:12}."
+            printf -- '- Odoo %s.0: %s -> %s (sha256 %s -> %s)\n' \
+              "$V" "$old_date" "$new_date" "${old_sha:0:12}" "${new_sha:0:12}" >> "$notes"
+            bumped+=("$V")
+            dates+=("$new_date")
           done
 
-      - name: Open pull request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: auto/odoo-update
-          delete-branch: true
-          commit-message: "chore: bump Odoo nightly builds to latest"
-          title: "chore: bump Odoo nightly builds to latest"
-          body: |
-            Weekly automatic bump of the pinned Odoo nightly builds.
+          if [ "${#bumped[@]}" -eq 0 ]; then
+            echo "changed=no" >> "$GITHUB_OUTPUT"
+            echo "### No bump needed" >> "$GITHUB_STEP_SUMMARY"
+            echo "Odoo 16/17/18/19 are all pinned to the newest nightly available." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
 
-            For each of 16/17/18/19 the `ENV APP_VERSION`, `image.version` label,
-            download URL and SHA-256 in `*/debian-12/Dockerfile` are updated to
-            the newest nightly available on `nightly.odoo.com`, and the README
-            version table is refreshed.
+          # "16, 17 and 19" reads better in a commit subject than "16 17 19".
+          versions="$(printf '%s, ' "${bumped[@]}")"
+          versions="${versions%, }"
+          versions="$(printf '%s' "$versions" | sed 's/, \([0-9]*\)$/ and \1/')"
 
-            Merging triggers the build workflow, which derives the pushed
-            `X` / `X.0` / `X.0.<date>` GHCR tags from these Dockerfiles.
-          base: main
+          # Every version usually lands on the same nightly date; only name it when they do.
+          uniq_dates="$(printf '%s\n' "${dates[@]}" | sort -u | wc -l | tr -d ' ')"
+          if [ "$uniq_dates" -eq 1 ]; then
+            subject="chore(odoo): bump ${versions} to nightly ${dates[0]}"
+          else
+            subject="chore(odoo): bump ${versions} to the latest nightly builds"
+          fi
+
+          {
+            echo "$subject"
+            echo
+            cat "$notes"
+            echo
+            echo "Each pin is the dated tarball from nightly.odoo.com, with the SHA-256"
+            echo "recomputed from the downloaded archive so the Docker build keeps"
+            echo "verifying what it fetches. The GHCR tags follow from ENV APP_VERSION."
+          } > "${RUNNER_TEMP}/commit-message.txt"
+
+          echo "changed=yes" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Bumped ${versions}"
+            echo
+            cat "$notes"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push
+        id: push
+        if: steps.bump.outputs.changed == 'yes'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -F "${RUNNER_TEMP}/commit-message.txt"
+          git push origin HEAD:main
+          sha="$(git rev-parse HEAD)"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "Pushed ${sha:0:7} to main: $(git log -1 --pretty=%s)"
+
+  # A push made with GITHUB_TOKEN does not raise the `push` event, so the images
+  # are rebuilt by calling the build workflow directly instead of relying on the
+  # commit above to trigger it. `ref` matters: without it the build would check
+  # out the commit that started this run, i.e. the pins from before the bump.
+  build:
+    name: Rebuild images
+    needs: bump
+    if: needs.bump.outputs.changed == 'yes'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-ghcr.yaml
+    with:
+      ref: ${{ needs.bump.outputs.sha }}

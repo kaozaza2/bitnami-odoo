@@ -23,13 +23,15 @@ jobs:
   build:
     name: Odoo ${{ matrix.version }}
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
         version: ["16", "17", "18", "19"]
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.ref || github.sha }}
 
@@ -38,34 +40,39 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           DF="${{ matrix.version }}/debian-12/Dockerfile"
+
           APP_VERSION="$(sed -n 's/^ENV APP_VERSION="\([^"]*\)".*/\1/p' "$DF")"
+
           if [ -z "$APP_VERSION" ]; then
             echo "::error file=${DF}::No 'ENV APP_VERSION=\"...\"' line found — the image tags are derived from it, so the build cannot continue."
             exit 1
           fi
+
           {
             echo "app=${APP_VERSION}"
             echo "full=${APP_VERSION%.*}"
             echo "major=${APP_VERSION%%.*}"
           } >> "$GITHUB_OUTPUT"
+
           echo "Odoo ${APP_VERSION} -> tags ${APP_VERSION%%.*}, ${APP_VERSION%.*}, ${APP_VERSION}"
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4.2.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4.1.0
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7.3.0
         with:
           context: ./${{ matrix.version }}/debian-12
           file: ./${{ matrix.version }}/debian-12/Dockerfile
@@ -82,7 +89,11 @@ jobs:
           {
             echo "### Odoo ${{ steps.ver.outputs.app }} pushed"
             echo
-            for tag in "${{ steps.ver.outputs.major }}" "${{ steps.ver.outputs.full }}" "${{ steps.ver.outputs.app }}"; do
+            for tag in \
+              "${{ steps.ver.outputs.major }}" \
+              "${{ steps.ver.outputs.full }}" \
+              "${{ steps.ver.outputs.app }}"
+            do
               echo "- \`ghcr.io/kaozaza2/bitnami-odoo:${tag}\`"
             done
           } >> "$GITHUB_STEP_SUMMARY"

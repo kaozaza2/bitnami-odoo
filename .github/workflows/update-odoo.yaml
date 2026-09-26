@@ -17,7 +17,7 @@ jobs:
       sha: ${{ steps.push.outputs.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Bump Odoo nightly pins
         id: bump

@@ -2,7 +2,7 @@
 
 > Restored: Bitnami switched its free catalog to Odoo 19 only (October 2025). This branch was re-added from the last official Bitnami release so it can be built and maintained independently.
 
-- Version: `18.0.20260926` (Odoo sourced from the nightly build at `nightly.odoo.com/18.0/nightly/tgz`, pinned by date and checksum-verified at build time)
+- Version: `18.0.20260928` (Odoo sourced from the nightly build at `nightly.odoo.com/18.0/nightly/tgz`, pinned by date and checksum-verified at build time)
 - Base OS: Debian 12 (`debian-12`)
 - Container image: `ghcr.io/kaozaza2/bitnami-odoo:18`
 

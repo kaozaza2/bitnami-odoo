@@ -14,7 +14,7 @@ LABEL com.vmware.cp.artifact.flavor="sha256:c50c90cfd9d12b445b011e6ad529f1ad3dae
       org.opencontainers.image.source="https://github.com/bitnami/containers/tree/main/bitnami/odoo" \
       org.opencontainers.image.title="odoo" \
       org.opencontainers.image.vendor="Broadcom, Inc." \
-      org.opencontainers.image.version="17.0.20260928"
+      org.opencontainers.image.version="17.0.20261005"
 
 ENV OS_ARCH="${TARGETARCH:-amd64}" \
     OS_FLAVOUR="debian-12" \
@@ -43,15 +43,15 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
       tar -zxf "${COMPONENT}.tar.gz" -C /opt/bitnami --strip-components=2 --no-same-owner ; \
       rm -rf "${COMPONENT}".tar.gz{,.sha256} ; \
     done
-RUN curl -sSLf "https://nightly.odoo.com/17.0/nightly/tgz/odoo_17.0.20260928.tar.gz" -o /tmp/odoo-source.tar.gz \
-    && echo "64a462abe73f94e0941dd101d9cc4a59c41f2516ab4b073788b2a8e77040e27d  /tmp/odoo-source.tar.gz" | sha256sum -c - \
+RUN curl -sSLf "https://nightly.odoo.com/17.0/nightly/tgz/odoo_17.0.20261005.tar.gz" -o /tmp/odoo-source.tar.gz \
+    && echo "16c5eab41564f9c061fdb699e62cc798227a8a8617d5535e400224b045b6150f  /tmp/odoo-source.tar.gz" | sha256sum -c - \
     && tar -xzf /tmp/odoo-source.tar.gz -C /tmp \
     && rm /tmp/odoo-source.tar.gz \
     && rm -rf /opt/bitnami/odoo/lib/odoo /opt/bitnami/odoo/lib/odoo-*.egg-info \
-    && cp -a /tmp/odoo-17.0.post20260928/odoo /opt/bitnami/odoo/lib/odoo \
-    && cp -a /tmp/odoo-17.0.post20260928/odoo.egg-info /opt/bitnami/odoo/lib/odoo-17.0.post20260928-py3.12.egg-info \
-    && /opt/bitnami/odoo/venv/bin/pip install --no-cache-dir -r /tmp/odoo-17.0.post20260928/requirements.txt \
-    && rm -rf /tmp/odoo-17.0.post20260928
+    && cp -a /tmp/odoo-17.0.post20261005/odoo /opt/bitnami/odoo/lib/odoo \
+    && cp -a /tmp/odoo-17.0.post20261005/odoo.egg-info /opt/bitnami/odoo/lib/odoo-17.0.post20261005-py3.12.egg-info \
+    && /opt/bitnami/odoo/venv/bin/pip install --no-cache-dir -r /tmp/odoo-17.0.post20261005/requirements.txt \
+    && rm -rf /tmp/odoo-17.0.post20261005
 RUN apt-get update && apt-get upgrade -y && \
     apt-get clean && rm -rf /var/lib/apt/lists /var/cache/apt/archives
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
@@ -66,7 +66,7 @@ RUN curl -sLO "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6
 
 COPY rootfs /
 RUN /opt/bitnami/scripts/odoo/postunpack.sh
-ENV APP_VERSION="17.0.20260928" \
+ENV APP_VERSION="17.0.20261005" \
     BITNAMI_APP_NAME="odoo" \
     PATH="/opt/bitnami/python/bin:/opt/bitnami/common/bin:/opt/bitnami/postgresql/bin:/opt/bitnami/node/bin:/opt/bitnami/odoo/bin:$PATH"
 

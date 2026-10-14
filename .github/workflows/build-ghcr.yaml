@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["16", "17", "18", "19"]
+        version: ["16", "17", "18", "19", "20"]
 
     steps:
       - name: Checkout

@@ -28,9 +28,9 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
       "python-3.12.11-10-linux-${OS_ARCH}-debian-12" \
-      "render-template-1.0.9-156-linux-${OS_ARCH}-debian-12" \
-      "postgresql-client-18.0.0-0-linux-${OS_ARCH}-debian-12" \
-      "node-22.20.0-0-linux-${OS_ARCH}-debian-12" \
+      "render-template-1.0.10-5-linux-${OS_ARCH}-debian-12" \
+      "postgresql-client-18.6.0-0-linux-${OS_ARCH}-debian-12" \
+      "node-22.23.3-0-linux-${OS_ARCH}-debian-12" \
       "odoo-18.0.20250905-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \

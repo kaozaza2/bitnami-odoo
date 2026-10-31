@@ -7,13 +7,13 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-10-14T15:41:11Z" \
+      org.opencontainers.image.created="2026-10-26T21:59:41Z" \
       org.opencontainers.image.description="Application packaged by Broadcom, Inc." \
       org.opencontainers.image.documentation="https://github.com/bitnami/containers/tree/main/bitnami/odoo/README.md" \
       org.opencontainers.image.source="https://github.com/bitnami/containers/tree/main/bitnami/odoo" \
       org.opencontainers.image.title="odoo" \
       org.opencontainers.image.vendor="Broadcom, Inc." \
-      org.opencontainers.image.version="20.0.20260925"
+      org.opencontainers.image.version="20.0.20261030"
 
 ENV OS_ARCH="${TARGETARCH:-amd64}" \
     OS_FLAVOUR="debian-12" \
@@ -27,11 +27,11 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     DOWNLOADS_URL=${SECRET_DOWNLOADS_URL:-${DOWNLOADS_URL}} ; \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
-      "python-3.13.16-4-linux-${OS_ARCH}-debian-12" \
-      "render-template-1.0.10-5-linux-${OS_ARCH}-debian-12" \
+      "python-3.13.18-1-linux-${OS_ARCH}-debian-12" \
+      "render-template-1.0.10-6-linux-${OS_ARCH}-debian-12" \
       "postgresql-client-18.6.0-0-linux-${OS_ARCH}-debian-12" \
-      "node-22.23.3-0-linux-${OS_ARCH}-debian-12" \
-      "odoo-20.0.20260925-0-linux-${OS_ARCH}-debian-12" \
+      "node-22.23.4-0-linux-${OS_ARCH}-debian-12" \
+      "odoo-20.0.20261025-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -42,6 +42,15 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
       rm -rf "${COMPONENT}".tar.gz ; \
     done ; \
     rm -rf /opt/bitnami/checksums ;
+RUN curl -sSLf "https://nightly.odoo.com/20.0/nightly/tgz/odoo_20.0.20261030.tar.gz" -o /tmp/odoo-source.tar.gz \
+    && echo "db1fa2ecfb9cae1fc8779bf8c3faa4ba16d32e33fb3ba40b16cf5dae07a121e8  /tmp/odoo-source.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/odoo-source.tar.gz -C /tmp \
+    && rm /tmp/odoo-source.tar.gz \
+    && rm -rf /opt/bitnami/odoo/lib/odoo /opt/bitnami/odoo/lib/odoo-*.egg-info \
+    && cp -a /tmp/odoo-20.0.post20261030/odoo /opt/bitnami/odoo/lib/odoo \
+    && cp -a /tmp/odoo-20.0.post20261030/odoo.egg-info /opt/bitnami/odoo/lib/odoo-20.0.post20261030-py3.13.egg-info \
+    && /opt/bitnami/odoo/venv/bin/pip install --no-cache-dir -r /tmp/odoo-20.0.post20261030/requirements.txt \
+    && rm -rf /tmp/odoo-20.0.post20261030
 RUN apt-get update && apt-get upgrade -y && \
     apt-get clean && rm -rf /var/lib/apt/lists /var/cache/apt/archives
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
@@ -56,9 +65,9 @@ RUN curl -sLO "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6
 
 COPY rootfs /
 RUN /opt/bitnami/scripts/odoo/postunpack.sh
-ENV APP_VERSION="20.0.20260925" \
+ENV APP_VERSION="20.0.20261030" \
     BITNAMI_APP_NAME="odoo" \
-    IMAGE_REVISION="4" \
+    IMAGE_REVISION="1" \
     LD_LIBRARY_PATH="/opt/bitnami/postgresql/lib" \
     PATH="/opt/bitnami/python/bin:/opt/bitnami/common/bin:/opt/bitnami/postgresql/bin:/opt/bitnami/node/bin:/opt/bitnami/odoo/bin:$PATH"
 

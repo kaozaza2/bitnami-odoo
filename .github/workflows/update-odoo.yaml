@@ -30,7 +30,7 @@ jobs:
           bumped=()                                # major versions that actually moved
           dates=()                                 # the nightly date each of them moved to
 
-          for V in 16 17 18 19; do
+          for V in 16 17 18 19 20; do
             DF="${V}/debian-12/Dockerfile"
             old="$(sed -n 's/^ENV APP_VERSION="\([^"]*\)".*/\1/p' "$DF")"
             old_date="${old##*.}"
@@ -76,7 +76,7 @@ jobs:
           if [ "${#bumped[@]}" -eq 0 ]; then
             echo "changed=no" >> "$GITHUB_OUTPUT"
             echo "### No bump needed" >> "$GITHUB_STEP_SUMMARY"
-            echo "Odoo 16/17/18/19 are all pinned to the newest nightly available." >> "$GITHUB_STEP_SUMMARY"
+            echo "Odoo 16/17/18/19/20 are all pinned to the newest nightly available." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 

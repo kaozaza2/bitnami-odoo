@@ -1,10 +1,10 @@
-# Docker Image for Odoo 16, 17, 18 and 19
+# Docker Image for Odoo 16, 17, 18, 19 and 20
 
 > Odoo is an open source ERP and CRM platform, formerly known as OpenERP, that can connect a wide variety of business operations such as sales, supply chain, finance, and project management.
 
 [Overview of Odoo](https://www.odoo.com/)
 
-These images are built from the [Bitnami Odoo container recipes](https://github.com/bitnami/containers/tree/main/bitnami/odoo), which is why the filesystem and environment variable behavior match the familiar Bitnami images. Bitnami dropped Odoo 16 and 17 from its catalog in 2025 and now maintains Odoo 19 only; this is a hard fork of that recipe that keeps every supported 16/17/18/19 series, sourcing all of them from the official Odoo nightly builds.
+These images are built from the [Bitnami Odoo container recipes](https://github.com/bitnami/containers/tree/main/bitnami/odoo), which is why the filesystem and environment variable behavior match the familiar Bitnami images. Bitnami dropped Odoo 16 and 17 from its catalog in 2025; this is a hard fork of that recipe that keeps every supported 16/17/18/19/20 series, sourcing all of them from the official Odoo nightly builds.
 
 ## Published images
 
@@ -22,6 +22,7 @@ All tags are published to `ghcr.io/kaozaza2/bitnami-odoo`. Each major version is
 | 17      | nightly.odoo.com `17.0` tgz, checksum-verified | `17.0.20261021`           |
 | 18      | nightly.odoo.com `18.0` tgz, checksum-verified | `18.0.20261031`           |
 | 19      | nightly.odoo.com `19.0` tgz, checksum-verified | `19.0.20261031`           |
+| 20      | nightly.odoo.com `20.0` tgz, checksum-verified | `20.0.20261030`           |
 
 The nightly tarballs are pinned by date (not the moving `latest` file), downloaded and verified by their SHA-256 during the Docker build, then applied on top of the Bitnami scaffold. Bumping a version means editing `ENV APP_VERSION` and the pinned checksum in the `Dockerfile` — the [CI workflow](.github/workflows/build-ghcr.yaml) derives the tags from that value, so the workflow file never needs to change.
 
@@ -37,7 +38,7 @@ Odoo requires PostgreSQL. The recommended way is with Docker Compose:
 docker compose up -d
 ```
 
-This uses the root `docker-compose.yml` (PostgreSQL + Odoo 19). Per-version compose files live in `16/debian-12/`, `17/debian-12/`, `18/debian-12/` and `19/debian-12/`.
+This uses the root `docker-compose.yml` (PostgreSQL + Odoo 19). Per-version compose files live in `16/debian-12/`, `17/debian-12/`, `18/debian-12/`, `19/debian-12/` and `20/debian-12/`.
 
 ## How to use this image
 
@@ -160,9 +161,10 @@ docker build -t ghcr.io/kaozaza2/bitnami-odoo:16 16/debian-12
 docker build -t ghcr.io/kaozaza2/bitnami-odoo:17 17/debian-12
 docker build -t ghcr.io/kaozaza2/bitnami-odoo:18 18/debian-12
 docker build -t ghcr.io/kaozaza2/bitnami-odoo:19 19/debian-12
+docker build -t ghcr.io/kaozaza2/bitnami-odoo:20 20/debian-12
 ```
 
-The Docker builds require outbound access to the Bitnami downloads proxy (scaffold), `nightly.odoo.com` (16/17/18 sources) and PyPI (dependency sync).
+The Docker builds require outbound access to the Bitnami downloads proxy (scaffold), `nightly.odoo.com` (Odoo sources) and PyPI (dependency sync).
 
 ## License
 

@@ -20,9 +20,9 @@ All tags are published to `ghcr.io/kaozaza2/bitnami-odoo`. Each major version is
 |---------|------------------------------------------------|---------------------------|
 | 16      | nightly.odoo.com `16.0` tgz, checksum-verified | `16.0.20261021`           |
 | 17      | nightly.odoo.com `17.0` tgz, checksum-verified | `17.0.20261021`           |
-| 18      | nightly.odoo.com `18.0` tgz, checksum-verified | `18.0.20261031`           |
-| 19      | nightly.odoo.com `19.0` tgz, checksum-verified | `19.0.20261031`           |
-| 20      | nightly.odoo.com `20.0` tgz, checksum-verified | `20.0.20261030`           |
+| 18      | nightly.odoo.com `18.0` tgz, checksum-verified | `18.0.20261102`           |
+| 19      | nightly.odoo.com `19.0` tgz, checksum-verified | `19.0.20261102`           |
+| 20      | nightly.odoo.com `20.0` tgz, checksum-verified | `20.0.20261102`           |
 
 The nightly tarballs are pinned by date (not the moving `latest` file), downloaded and verified by their SHA-256 during the Docker build, then applied on top of the Bitnami scaffold. Bumping a version means editing `ENV APP_VERSION` and the pinned checksum in the `Dockerfile` — the [CI workflow](.github/workflows/build-ghcr.yaml) derives the tags from that value, so the workflow file never needs to change.
 
